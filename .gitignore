@@ -1,0 +1,6 @@
+# JetBrains Editor
+.idea/
+
+# Compiled executables
+*.exe
+*.out
