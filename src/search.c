@@ -120,6 +120,13 @@ int search_path(const char *path, const char *query, int case_insensitive, int r
 				continue;
 			}
 
+			if (entry->d_name[0] == '.' ||
+				strcmp(entry->d_name, "node_modules") == 0 ||
+				strcmp(entry->d_name, "build") == 0 ||
+				strcmp(entry->d_name, "bin") == 0) {
+				continue;
+			}
+
 			size_t path_len = strlen(path);
 			size_t name_len = strlen(entry->d_name);
 			size_t full_len = path_len + name_len + 2;
