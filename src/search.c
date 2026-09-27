@@ -3,13 +3,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <ctype.h>
 #include <dirent.h>
 
 #define COLOR_GREEN "\033[1;32m"
 #define COLOR_RED "\033[1;31m"
 #define COLOR_RESET "\033[0m"
 
-int search_file(const char *filename, const char *query, int case_insensitive, int inverted, int count_only) {
+int is_valid_word_match(const char *buffer, const char *match, size_t query_len) {
+	if (match > buffer) {
+		char prev = *(match - 1);
+		if (isalnum((unsigned char)prev) || prev == '_') {
+			return 0;
+		}
+	}
+
+	char next = *(match + query_len);
+	if (isalnum((unsigned char)next) || next == '_') {
+		return 0;
+	}
+	return 1;
+}
+
+int search_file(const char *filename, const char *query, int case_insensitive, int inverted, int count_only, int word_match) {
 	FILE *fp = fopen(filename, "r");
 	if (fp == NULL) {
 		printf("Could not open file %s\n", filename);
@@ -45,11 +61,25 @@ int search_file(const char *filename, const char *query, int case_insensitive, i
 			buffer[len] = '\0';
 			linenum++;
 
-			char* match = NULL;
-			if (case_insensitive) {
-				match = strcasestr(buffer, query);
-			} else {
-				match = strstr(buffer, query);
+			char *match = NULL;
+			char *search_ptr = buffer;
+			size_t query_len = strlen(query);
+
+			while (1) {
+				if (case_insensitive) {
+					match = strcasestr(search_ptr, query);
+				} else {
+					match = strstr(search_ptr, query);
+				}
+
+				if (match == NULL) {
+					break;
+				}
+
+				if (!word_match || is_valid_word_match(buffer, match, query_len)) {
+					break;
+				}
+				search_ptr = match + 1;
 			}
 
 			int is_match = inverted ? (match == NULL) : (match != NULL);
@@ -80,8 +110,25 @@ int search_file(const char *filename, const char *query, int case_insensitive, i
 	if (len > 0) {
 		buffer[len] = '\0';
 		linenum++;
-		char *match = case_insensitive ? strcasestr(buffer, query) : strstr(buffer, query);
+		char *match = NULL;
+		char *search_ptr = buffer;
+		size_t query_len = strlen(query);
 
+		while (1) {
+			if (case_insensitive) {
+				match = strcasestr(search_ptr, query);
+			} else {
+				match = strstr(search_ptr, query);
+			}
+			if (match == NULL) {
+				break;
+			}
+
+			if (!word_match || is_valid_word_match(buffer, match, query_len)) {
+				break;
+			}
+			search_ptr = match + 1;
+		}
 		int is_match = inverted ? (match == NULL) : (match != NULL);
 
 		if (is_match) {
@@ -114,7 +161,7 @@ int search_file(const char *filename, const char *query, int case_insensitive, i
 	return 0;
 }
 
-int search_path(const char *path, const char *query, int case_insensitive, int recursive, int inverted, int count_only) {
+int search_path(const char *path, const char *query, int case_insensitive, int recursive, int inverted, int count_only, int word_match) {
 	struct stat path_stat;
 	if (stat(path, &path_stat) != 0) {
 		printf("Could not access path %s\n", path);
@@ -122,7 +169,7 @@ int search_path(const char *path, const char *query, int case_insensitive, int r
 	}
 
 	if (S_ISREG(path_stat.st_mode)) {
-		return search_file(path, query, case_insensitive, inverted, count_only);
+		return search_file(path, query, case_insensitive, inverted, count_only, word_match);
 	}
 
 	else if (S_ISDIR(path_stat.st_mode)) {
@@ -160,7 +207,7 @@ int search_path(const char *path, const char *query, int case_insensitive, int r
 			}
 			snprintf(full_path, full_len, "%s/%s", path, entry->d_name);
 
-			search_path(full_path, query, case_insensitive, recursive, inverted, count_only);
+			search_path(full_path, query, case_insensitive, recursive, inverted, count_only, word_match);
 
 			free(full_path);
 		}
