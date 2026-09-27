@@ -15,8 +15,9 @@ int main(int argc, char *argv[]) {
 	int inverted = 0;
 	int count_only = 0;
 	int word_match = 0;
+	int quiet = 0;
 
-	while ((opt = getopt(argc, argv, "irvcw")) != -1) {
+	while ((opt = getopt(argc, argv, "irvcwq")) != -1) {
 		switch (opt) {
 			case 'i':
 				case_insensitive = 1;
@@ -33,6 +34,9 @@ int main(int argc, char *argv[]) {
 			case 'w':
 				word_match = 1;
 				break;
+			case 'q':
+				quiet = 1;
+				break;
 			default:
 				print_usage();
 				return -1;
@@ -47,5 +51,14 @@ int main(int argc, char *argv[]) {
 	const char *path = argv[optind];
 	const char *query = argv[optind + 1];
 
-	return search_path(path, query, case_insensitive, recursive, inverted, count_only, word_match);
+	int total_matches = search_path(path, query, case_insensitive, recursive, inverted, count_only, word_match, quiet);
+
+	if (total_matches < 0) {
+		return 2;
+	}
+
+	if (quiet) {
+		return (total_matches > 0) ? 0 : 1;
+	}
+
 }
