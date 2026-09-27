@@ -8,7 +8,7 @@
 #define COLOR_RED "\033[1;31m"
 #define COLOR_RESET "\033[0m"
 
-int search_file(const char *filename, const char *query, int case_insensitive) {
+int search_file(const char *filename, const char *query, int case_insensitive, int inverted) {
 	FILE *fp = fopen(filename, "r");
 	if (fp == NULL) {
 		printf("Could not open file %s\n", filename);
@@ -49,18 +49,23 @@ int search_file(const char *filename, const char *query, int case_insensitive) {
 			} else {
 				match = strstr(buffer, query);
 			}
-			if (match != NULL) {
-				printf("%s:%d\t", filename, linenum);
 
-				size_t prefix_len = match - buffer;
-				fwrite(buffer, 1, prefix_len, stdout);
+			int is_match = inverted ? (match == NULL) : (match != NULL);
 
-				size_t query_len = strlen(query);
-				printf(COLOR_RED);
-				fwrite(match, 1, query_len, stdout);
-				printf(COLOR_RESET);
+			if (is_match) {
+				if (inverted) {
+					printf("%s:%d\t%s", filename, linenum, buffer);
+				} else {
+					size_t prefix_len = match - buffer;
+					fwrite(buffer, 1, prefix_len, stdout);
 
-				printf("%s", match + query_len);
+					size_t query_len = strlen(query);
+					printf(COLOR_RED);
+					fwrite(match, 1, query_len, stdout);
+					printf(COLOR_RESET);
+
+					printf("%s", match + query_len);
+				}
 			}
 
 			len = 0;
@@ -71,18 +76,23 @@ int search_file(const char *filename, const char *query, int case_insensitive) {
 		buffer[len] = '\0';
 		linenum++;
 		char *match = case_insensitive ? strcasestr(buffer, query) : strstr(buffer, query);
-		if (match != NULL) {
-			printf("%s:%d\t", filename, linenum);
 
-			size_t prefix_len = match - buffer;
-			fwrite(buffer, 1, prefix_len, stdout);
+		int is_match = inverted ? (match == NULL) : (match != NULL);
 
-			size_t query_len = strlen(query);
-			printf(COLOR_RED);
-			fwrite(match, 1, query_len, stdout);
-			printf(COLOR_RESET);
+		if (is_match) {
+			if (inverted) {
+				printf("%s:%d\t%s\n", filename, linenum, buffer);
+			} else {
+				size_t prefix_len = match - buffer;
+				fwrite(buffer, 1, prefix_len, stdout);
 
-			printf("%s\n", match + query_len);
+				size_t query_len = strlen(query);
+				printf(COLOR_RED);
+				fwrite(match, 1, query_len, stdout);
+				printf(COLOR_RESET);
+
+				printf("%s", match + query_len);
+			}
 		}
 	}
 
@@ -91,7 +101,7 @@ int search_file(const char *filename, const char *query, int case_insensitive) {
 	return 0;
 }
 
-int search_path(const char *path, const char *query, int case_insensitive, int recursive) {
+int search_path(const char *path, const char *query, int case_insensitive, int recursive, int inverted) {
 	struct stat path_stat;
 	if (stat(path, &path_stat) != 0) {
 		printf("Could not access path %s\n", path);
@@ -99,7 +109,7 @@ int search_path(const char *path, const char *query, int case_insensitive, int r
 	}
 
 	if (S_ISREG(path_stat.st_mode)) {
-		return search_file(path, query, case_insensitive);
+		return search_file(path, query, case_insensitive, inverted);
 	}
 
 	else if (S_ISDIR(path_stat.st_mode)) {
@@ -137,7 +147,7 @@ int search_path(const char *path, const char *query, int case_insensitive, int r
 			}
 			snprintf(full_path, full_len, "%s/%s", path, entry->d_name);
 
-			search_path(full_path, query, case_insensitive, recursive);
+			search_path(full_path, query, case_insensitive, recursive, inverted);
 
 			free(full_path);
 		}

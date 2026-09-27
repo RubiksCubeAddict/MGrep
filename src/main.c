@@ -12,14 +12,18 @@ int main(int argc, char *argv[]) {
 	int opt;
 	int case_insensitive = 0;
 	int recursive = 0;
+	int inverted = 0;
 
-	while ((opt = getopt(argc, argv, "ir")) != -1) {
+	while ((opt = getopt(argc, argv, "irv")) != -1) {
 		switch (opt) {
 			case 'i':
 				case_insensitive = 1;
 				break;
 			case 'r':
 				recursive = 1;
+				break;
+			case 'v':
+				inverted = 1;
 				break;
 			default:
 				print_usage();
@@ -35,5 +39,5 @@ int main(int argc, char *argv[]) {
 	const char *path = argv[optind];
 	const char *query = argv[optind + 1];
 
-	return search_path(path, query, case_insensitive, recursive);
+	return search_path(path, query, case_insensitive, recursive, inverted);
 }
