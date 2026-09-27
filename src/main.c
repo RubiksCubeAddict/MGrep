@@ -1,15 +1,39 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
+#include <unistd.h>
 #include "../include/search.h"
 
+void print_usage(void) {
+	printf("Usage: mgrep [-i] [-r] <search_term> <filename/dir>\n");
+}
+
 int main(int argc, char *argv[]) {
-	if (argc < 3) {
-		printf("Usage: mgrep <search_term> <filename>\n");
-		return 1;
+	int opt;
+	int case_insensitive = 0;
+	int recursive = 0;
+
+	while ((opt = getopt(argc, argv, "ir")) != -1) {
+		switch (opt) {
+			case 'i':
+				case_insensitive = 1;
+				break;
+			case 'r':
+				recursive = 1;
+				break;
+			default:
+				print_usage();
+				return -1;
+		}
 	}
 
-	if (search_file(argv[1], argv[2]) == 0) {
-		return 0;
+	if (optind + 2 > argc) {
+		print_usage();
+		return -1;
 	}
 
-	return -1;
+	const char *path = argv[optind];
+	const char *query = argv[optind + 1];
+
+	return search_path(path, query, case_insensitive, recursive);
 }
