@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include "../include/search.h"
 
@@ -17,8 +18,9 @@ int main(int argc, char *argv[]) {
 	int word_match = 0;
 	int quiet = 0;
 	int files_with_matches = 0;
+	int context = 0;
 
-	while ((opt = getopt(argc, argv, "irvcwql")) != -1) {
+	while ((opt = getopt(argc, argv, "irvcwqlC:")) != -1) {
 		switch (opt) {
 			case 'i':
 				case_insensitive = 1;
@@ -41,6 +43,9 @@ int main(int argc, char *argv[]) {
 			case 'l':
 				files_with_matches = 1;
 				break;
+			case 'C':
+				context = atoi(optarg);
+				break;
 			default:
 				print_usage();
 				return -1;
@@ -55,7 +60,7 @@ int main(int argc, char *argv[]) {
 	const char *path = argv[optind];
 	const char *query = argv[optind + 1];
 
-	int total_matches = search_path(path, query, case_insensitive, recursive, inverted, count_only, word_match, quiet, files_with_matches);
+	int total_matches = search_path(path, query, case_insensitive, recursive, inverted, count_only, word_match, quiet, files_with_matches, context);
 
 	if (total_matches < 0) {
 		return 2;
