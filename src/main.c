@@ -6,7 +6,17 @@
 #include "../include/search.h"
 
 void print_usage(void) {
-	printf("Usage: mgrep [-i] [-r] <search_term> <filename/dir>\n");
+	printf("Usage: mgrep [OPTIONS] <search_term> <filename/dir>\n");
+	printf("Options:\n");
+	printf("	-i			Case-insensitive search\n");
+	printf("	-r			Recursive search\n");
+	printf("	-v			Inverted match\n");
+	printf("	-c			Count matching lines\n");
+	printf("	-w			Whole-word match\n");
+	printf("	-q			Quiet mode (exit codes only)\n");
+	printf("	-l			Files with matches only\n");
+	printf("	-C <num> 		Print <num> lines of context\n");
+	printf("	-E			Extended regular expression (POSIX regex)\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -19,8 +29,9 @@ int main(int argc, char *argv[]) {
 	int quiet = 0;
 	int files_with_matches = 0;
 	int context = 0;
+	int extended_regex = 0;
 
-	while ((opt = getopt(argc, argv, "irvcwqlC:")) != -1) {
+	while ((opt = getopt(argc, argv, "irvcwqlC:E")) != -1) {
 		switch (opt) {
 			case 'i':
 				case_insensitive = 1;
@@ -46,6 +57,9 @@ int main(int argc, char *argv[]) {
 			case 'C':
 				context = atoi(optarg);
 				break;
+			case 'E':
+				extended_regex = 1;
+				break;
 			default:
 				print_usage();
 				return -1;
@@ -60,7 +74,7 @@ int main(int argc, char *argv[]) {
 	const char *path = argv[optind];
 	const char *query = argv[optind + 1];
 
-	int total_matches = search_path(path, query, case_insensitive, recursive, inverted, count_only, word_match, quiet, files_with_matches, context);
+	int total_matches = search_path(path, query, case_insensitive, recursive, inverted, count_only, word_match, quiet, files_with_matches, context, extended_regex);
 
 	if (total_matches < 0) {
 		return 2;
