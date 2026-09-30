@@ -17,6 +17,7 @@ void print_usage(void) {
 	printf("	-l			Files with matches only\n");
 	printf("	-C <num> 		Print <num> lines of context\n");
 	printf("	-E			Extended regular expression (POSIX regex)\n");
+	printf("	-n			Print line number with output lines\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -30,8 +31,9 @@ int main(int argc, char *argv[]) {
 	int files_with_matches = 0;
 	int context = 0;
 	int extended_regex = 0;
+	int show_line_numbers = 0;
 
-	while ((opt = getopt(argc, argv, "irvcwqlC:E")) != -1) {
+	while ((opt = getopt(argc, argv, "irvcwqlC:En")) != -1) {
 		switch (opt) {
 			case 'i':
 				case_insensitive = 1;
@@ -60,6 +62,9 @@ int main(int argc, char *argv[]) {
 			case 'E':
 				extended_regex = 1;
 				break;
+			case 'n':
+				show_line_numbers = 1;
+				break;
 			default:
 				print_usage();
 				return -1;
@@ -71,10 +76,10 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
-	const char *path = argv[optind];
-	const char *query = argv[optind + 1];
+	const char *query = argv[optind];
+	const char *path = argv[optind + 1];
 
-	int total_matches = search_path(path, query, case_insensitive, recursive, inverted, count_only, word_match, quiet, files_with_matches, context, extended_regex);
+	int total_matches = search_path(path, query, case_insensitive, recursive, inverted, count_only, word_match, quiet, files_with_matches, context, extended_regex, show_line_numbers);
 
 	if (total_matches < 0) {
 		return 2;

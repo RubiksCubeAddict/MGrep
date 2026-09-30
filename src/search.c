@@ -26,7 +26,7 @@ int is_valid_word_match(const char *buffer, const char *match, size_t query_len)
 	return 1;
 }
 
-int search_file(const char *filename, const char *query, int case_insensitive, int inverted, int count_only, int word_match, int quiet, int files_with_matches, int context, int extended_regex) {
+int search_file(const char *filename, const char *query, int case_insensitive, int inverted, int count_only, int word_match, int quiet, int files_with_matches, int context, int extended_regex, int show_line_numbers) {
 	FILE *fp = fopen(filename, "r");
 	if (fp == NULL) {
 		printf("Could not open file %s\n", filename);
@@ -120,6 +120,7 @@ int search_file(const char *filename, const char *query, int case_insensitive, i
 					}
 
 					if (!word_match || is_valid_word_match(buffer, match, query_len)) {
+						matched = 1;
 						break;
 					}
 					search_ptr = match + 1;
@@ -153,8 +154,15 @@ int search_file(const char *filename, const char *query, int case_insensitive, i
 						history_count = 0;
 					}
 					if (inverted) {
-						printf("%s:%d\t%s", filename, linenum, buffer);
+						if (show_line_numbers) {
+							printf("%s:%d:%s", filename, linenum, buffer);
+						} else {
+							printf("%s:%d\t%s", filename, linenum, buffer);
+						}
 					} else {
+						if (show_line_numbers) {
+							printf("%s:%d:", filename, linenum);
+						}
 						size_t prefix_len = match - buffer;
 						fwrite(buffer, 1, prefix_len, stdout);
 
@@ -236,8 +244,15 @@ int search_file(const char *filename, const char *query, int case_insensitive, i
 			}
 			if (!quiet && !count_only) {
 				if (inverted) {
-					printf("%s:%d\t%s\n", filename, linenum, buffer);
+					if (show_line_numbers) {
+						printf("%s:%d:%s\n", filename, linenum, buffer);
+					} else {
+						printf("%s:%d\t%s\n", filename, linenum, buffer);
+					}
 				} else {
+					if (show_line_numbers) {
+						printf("%s:%d:", filename, linenum);
+					}
 					size_t prefix_len = match - buffer;
 					fwrite(buffer, 1, prefix_len, stdout);
 
@@ -262,7 +277,7 @@ int search_file(const char *filename, const char *query, int case_insensitive, i
 	return match_count;
 }
 
-int search_path(const char *path, const char *query, int case_insensitive, int recursive, int inverted, int count_only, int word_match, int quiet, int files_with_matches, int context, int extended_regex) {
+int search_path(const char *path, const char *query, int case_insensitive, int recursive, int inverted, int count_only, int word_match, int quiet, int files_with_matches, int context, int extended_regex, int show_line_numbers) {
 	struct stat path_stat;
 	if (stat(path, &path_stat) != 0) {
 		if (!quiet) {
@@ -272,7 +287,7 @@ int search_path(const char *path, const char *query, int case_insensitive, int r
 	}
 
 	if (S_ISREG(path_stat.st_mode)) {
-		return search_file(path, query, case_insensitive, inverted, count_only, word_match, quiet, files_with_matches, context, extended_regex);
+		return search_file(path, query, case_insensitive, inverted, count_only, word_match, quiet, files_with_matches, context, extended_regex, show_line_numbers);
 	}
 
 	else if (S_ISDIR(path_stat.st_mode)) {
@@ -311,7 +326,7 @@ int search_path(const char *path, const char *query, int case_insensitive, int r
 			}
 			snprintf(full_path, full_len, "%s/%s", path, entry->d_name);
 
-			int res =search_path(full_path, query, case_insensitive, recursive, inverted, count_only, word_match, quiet, files_with_matches, context, extended_regex);
+			int res = search_path(full_path, query, case_insensitive, recursive, inverted, count_only, word_match, quiet, files_with_matches, context, extended_regex, show_line_numbers);
 
 			if (res > 0) {
 				total_matches += res;
